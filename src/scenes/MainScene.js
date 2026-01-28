@@ -17,17 +17,17 @@ window.MainScene = class MainScene extends Phaser.Scene {
         this.load.image('player', 'assets/player/player.png');
         
         // オブジェクト
-        this.load.image('base', 'assets/objects/base.png');
-        this.load.image('ruin', 'assets/objects/ruin1.png');
+        this.load.image('base', 'assets/objects/基地.png');
+        this.load.image('ruin', 'assets/objects/廃墟1.png');
         this.load.image('wall', 'assets/objects/wall.png');
-        this.load.image('bullet', 'assets/objects/bullet.png');
+        this.load.image('bullet', 'assets/objects/発射された弾丸.png');
         
         // アイテムアイコン
-        this.load.image('wood_icon', 'assets/tiles/wood_icon.png');
-        this.load.image('stone_icon', 'assets/tiles/stone_icon.png');
-        this.load.image('dirt_icon', 'assets/tiles/dirt_icon.png');
-        this.load.image('food_icon', 'assets/tiles/food_icon.png');
-        this.load.image('food_item', 'assets/items/food.png');
+        this.load.image('wood_icon', 'assets/tiles/wood_icon.png'); //未実装
+        this.load.image('stone_icon', 'assets/tiles/stone_icon.png'); //未実装
+        this.load.image('dirt_icon', 'assets/tiles/dirt_icon.png');　//未実装
+        this.load.image('food_icon', 'assets/tiles/ご飯.png');//↓と同じ
+        this.load.image('food_item', 'assets/items/ご飯.png');//⇑と同じ
         
         // ローディング進捗
         this.load.on('progress', (value) => {

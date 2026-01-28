@@ -10,6 +10,7 @@ window.MainScene = class MainScene extends Phaser.Scene {
         // ローディング表示
         this.createLoadingScreen();
         
+        // === 画像ファイルの読み込み ===
         // タイルセット (10タイル横並び 32x320)
         this.load.image('tiles', 'assets/tiles/tiles.png');
         
@@ -22,12 +23,12 @@ window.MainScene = class MainScene extends Phaser.Scene {
         this.load.image('wall', 'assets/objects/wall.png');
         this.load.image('bullet', 'assets/objects/発射された弾丸.png');
         
-        // アイテムアイコン
-        this.load.image('wood_icon', 'assets/tiles/wood_icon.png'); //未実装
-        this.load.image('stone_icon', 'assets/tiles/stone_icon.png'); //未実装
-        this.load.image('dirt_icon', 'assets/tiles/dirt_icon.png');　//未実装
-        this.load.image('food_icon', 'assets/tiles/ご飯.png');//↓と同じ
-        this.load.image('food_item', 'assets/items/ご飯.png');//⇑と同じ
+        // アイテムアイコン - 未実装のものは同じ画像を使う
+        this.load.image('wood_icon', 'assets/items/ご飯.png'); // 仮: ご飯画像を使う
+        this.load.image('stone_icon', 'assets/items/ご飯.png'); // 仮: ご飯画像を使う
+        this.load.image('dirt_icon', 'assets/items/ご飯.png'); // 仮: ご飯画像を使う
+        this.load.image('food_icon', 'assets/items/ご飯.png');
+        this.load.image('food_item', 'assets/items/ご飯.png');
         
         // ローディング進捗
         this.load.on('progress', (value) => {
@@ -77,80 +78,163 @@ window.MainScene = class MainScene extends Phaser.Scene {
     create() {
         console.log("ゲーム作成開始");
 
+        // テクスチャ存在確認
         const missingTextures = [];
-    const expectedTextures = [
-        'tileset', 'player', 'base', 'ruin', 'bullet',
-        'item_wood', 'item_stone', 'item_dirt', 'item_food'
+        const expectedTextures = [
+            'tiles', 'player', 'base', 'ruin', 'bullet',
+            'food_icon'
         ];
 
-
-
         expectedTextures.forEach(textureKey => {
-        if (!this.textures.exists(textureKey)) {
-            missingTextures.push(textureKey);
-            console.error(`テクスチャが見つかりません: ${textureKey}`);
-        }
-    });
-
+            if (!this.textures.exists(textureKey)) {
+                missingTextures.push(textureKey);
+                console.error(`テクスチャが見つかりません: ${textureKey}`);
+            }
+        });
 
         if (missingTextures.length > 0) {
-        this.showMessage(`画像読み込みエラー: ${missingTextures.join(', ')}`, 5000);
-        // 代替画像で続行
-        this.createFallbackGraphics();
+            console.log(`画像読み込みエラー: ${missingTextures.join(', ')}`);
+            this.showMessage(`画像読み込みエラー`, 3000);
+            this.createFallbackGraphics();
+        }
 
-
-
-
+        // プレイヤーアニメーション設定
         this.createPlayerAnimations();
 
-
-    this.initGameState();
-    this.createWorld();
-    this.createPlayer();
-    this.createCamera();
-    this.createObjects();
-    this.createUI();
-    this.createInput();
-    this.startGameLoop();
-
-
-
-            
+        // ゲーム状態初期化
+        this.initGameState();
         
+        // ワールド生成
+        this.createWorld();
+        
+        // プレイヤー作成
+        this.createPlayer();
+        
+        // カメラ設定
+        this.createCamera();
+        
+        // オブジェクト配置
+        this.createObjects();
+        
+        // UI作成
+        this.createUI();
+        
+        // 入力設定
+        this.createInput();
+        
+        // ゲームループ開始
+        this.startGameLoop();
         
         console.log("ゲーム作成完了");
         this.showMessage("生存サバイバルゲーム開始！", 3000);
     }
 
-
-
-createFallbackGraphics() {
-    console.log("代替グラフィックを作成");
-
-    if (!this.textures.exists('tileset')) {
-        const graphics = this.add.graphics();
-
-
-   const tileColors = {
-            0: 0x000000, // 空気
-            1: 0x8B4513, // 土
-            2: 0x90EE90, // 草
-            3: 0x228B22, // 木
-            4: 0x808080, // 石
-            5: 0xB22222, // レンガ
-            6: 0xC0C0C0, // 鉄
-            7: 0x696969, // 道
-            8: 0xDEB887, // 畑
-            9: 0xFF4500  // 炎
-        };
-
-
-
+    createFallbackGraphics() {
+        console.log("代替グラフィックを作成");
         
+        // タイルセットがなければ色付きタイルを作成
+        if (!this.textures.exists('tiles')) {
+            console.log("タイルセットを作成します");
+            
+            // カラータイルを定義
+            const tileColors = {
+                0: 0x000000, // 空気: 黒
+                1: 0x8B4513, // 土: 茶色
+                2: 0x90EE90, // 草: 薄緑
+                3: 0x228B22, // 木: 緑
+                4: 0x808080, // 石: 灰色
+                5: 0xB22222, // レンガ: 赤
+                6: 0xC0C0C0, // 鉄: 銀
+                7: 0x696969, // 道: 暗灰
+                8: 0xDEB887, // 畑: 薄茶
+                9: 0xFF4500  // 炎: オレンジ
+            };
+            
+            // カンバスにタイルを描画
+            const tileCanvas = this.textures.createCanvas('tiles_fallback', 320, 32);
+            const ctx = tileCanvas.getContext('2d');
+            
+            for (let i = 0; i < 10; i++) {
+                // 背景色
+                const colorHex = tileColors[i].toString(16).padStart(6, '0');
+                ctx.fillStyle = `#${colorHex}`;
+                ctx.fillRect(i * 32, 0, 32, 32);
+                
+                // 枠線
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(i * 32, 0, 32, 32);
+                
+                // タイルの模様
+                if (i === 3) { // 木
+                    ctx.fillStyle = '#006400';
+                    for (let y = 4; y < 28; y += 8) {
+                        ctx.fillRect(i * 32 + 12, y, 8, 4);
+                    }
+                } else if (i === 4) { // 石
+                    ctx.fillStyle = '#A9A9A9';
+                    ctx.beginPath();
+                    ctx.arc(i * 32 + 16, 16, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (i === 9) { // 炎
+                    ctx.fillStyle = '#FF8C00';
+                    ctx.beginPath();
+                    ctx.moveTo(i * 32 + 16, 8);
+                    ctx.lineTo(i * 32 + 24, 24);
+                    ctx.lineTo(i * 32 + 8, 24);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            
+            tileCanvas.refresh();
+            console.log("代替タイルセット作成完了");
+        }
+        
+        // プレイヤー画像がなければ青い四角を作成
+        if (!this.textures.exists('player')) {
+            const playerCanvas = this.textures.createCanvas('player_fallback', 32, 32);
+            const ctx = playerCanvas.getContext('2d');
+            
+            ctx.fillStyle = '#0000FF'; // 青
+            ctx.fillRect(0, 0, 32, 32);
+            
+            // 顔
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(10, 8, 4, 4); // 左目
+            ctx.fillRect(18, 8, 4, 4); // 右目
+            ctx.fillRect(12, 18, 8, 2); // 口
+            
+            playerCanvas.refresh();
+        }
+    }
 
-        
-        
+    createPlayerAnimations() {
+        // プレイヤー画像があればアニメーションを作成
+        if (this.textures.exists('player')) {
+            try {
+                this.anims.create({
+                    key: 'idle',
+                    frames: [{ key: 'player', frame: 0 }],
+                    frameRate: 1,
+                    repeat: -1
+                });
+                
+                this.anims.create({
+                    key: 'walk',
+                    frames: [{ key: 'player', frame: 0 }],
+                    frameRate: 5,
+                    repeat: -1
+                });
+            } catch (error) {
+                console.log("アニメーション作成エラー:", error);
+            }
+        }
+    }
+
     initGameState() {
+        console.log("ゲーム状態初期化");
+        
         this.gameState = {
             // プレイヤーステータス
             hp: 100,
@@ -165,29 +249,21 @@ createFallbackGraphics() {
             // ゲーム状態
             isPaused: false,
             gameTime: 0,
-            isDay: true,
-            
-            // リソース
-            resources: {
-                wood: 5,
-                stone: 3,
-                dirt: 10,
-                food: 2
-            }
+            isDay: true
         };
         
-        // 初期アイテム
+        // 初期アイテム（既存画像を使用）
         this.gameState.inventory[0] = { 
             type: "wood", 
             name: "木材", 
             count: 5, 
-            icon: "wood_icon" 
+            icon: "food_icon"  // 仮にご飯アイコンを使用
         };
         this.gameState.inventory[1] = { 
             type: "stone", 
             name: "石材", 
             count: 3, 
-            icon: "stone_icon" 
+            icon: "food_icon"  // 仮にご飯アイコンを使用
         };
         this.gameState.inventory[2] = { 
             type: "food", 
@@ -199,132 +275,241 @@ createFallbackGraphics() {
             type: "dirt", 
             name: "土", 
             count: 10, 
-            icon: "dirt_icon" 
+            icon: "food_icon"  // 仮にご飯アイコンを使用
         };
+        
+        console.log("ゲーム状態初期化完了");
     }
 
     createWorld() {
-        console.log("ワールド生成");
+        console.log("ワールド生成開始");
         
-        // タイルマップ作成
-        this.map = this.make.tilemap({
-            data: window.worldData,
-            tileWidth: 32,
-            tileHeight: 32
-        });
+        try {
+            // 使用するタイルセット名を決定（フォールバックか通常か）
+            const tileSetName = this.textures.exists('tiles') ? 'tiles' : 'tiles_fallback';
+            
+            // タイルマップ作成
+            this.map = this.make.tilemap({
+                data: window.worldData,
+                tileWidth: 32,
+                tileHeight: 32
+            });
 
-        // タイルセット追加
-        this.tileset = this.map.addTilesetImage('tiles');
+            // タイルセット追加
+            this.tileset = this.map.addTilesetImage(tileSetName);
+            
+            if (!this.tileset) {
+                throw new Error("タイルセットの追加に失敗しました");
+            }
+            
+            // レイヤー作成
+            this.groundLayer = this.map.createLayer(0, this.tileset, 0, 0);
+            
+            if (!this.groundLayer) {
+                throw new Error("レイヤーの作成に失敗しました");
+            }
+            
+            // 衝突判定設定
+            if (window.COLLIDABLE_TILES) {
+                this.groundLayer.setCollision(window.COLLIDABLE_TILES);
+            } else {
+                // デフォルトの衝突タイル
+                this.groundLayer.setCollision([1, 3, 4, 5, 6, 9]);
+            }
+            
+            // ワールド境界設定
+            this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+            
+            console.log(`ワールドサイズ: ${this.map.width}x${this.map.height}`);
+            console.log("ワールド生成完了");
+            
+        } catch (error) {
+            console.error("ワールド生成エラー:", error);
+            this.showMessage("ワールド生成エラー", 3000);
+            
+            // エラー時に最小限の地面を作成
+            this.createBasicWorld();
+        }
+    }
+
+    createBasicWorld() {
+        console.log("基本ワールドを作成");
         
-        // レイヤー作成
-        this.groundLayer = this.map.createLayer(0, this.tileset, 0, 0);
+        // シンプルな地面を作成
+        const graphics = this.add.graphics();
+        graphics.fillStyle(0x8B4513, 1);
+        graphics.fillRect(0, 400, 800, 200);
         
-        // 衝突判定設定
-        this.groundLayer.setCollision(window.COLLIDABLE_TILES);
+        // 物理エンジン用の静的地面
+        this.ground = this.physics.add.staticGroup();
+        this.ground.create(400, 500, null).setScale(800, 100).refreshBody();
         
-        // ワールド境界設定
-        this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
-        
-        console.log("ワールドサイズ:", this.map.width, "x", this.map.height);
+        this.physics.add.collider(this.player, this.ground);
     }
 
     createPlayer() {
-        console.log("プレイヤー作成");
+        console.log("プレイヤー作成開始");
         
-        // プレイヤースプライト
-        this.player = this.physics.add.sprite(100, 100, 'player');
-        this.player.setCollideWorldBounds(true);
-        this.player.setScale(1);
-        
-        // 衝突判定
-        this.physics.add.collider(this.player, this.groundLayer);
-        
-        // プレイヤー情報
-        this.player.depth = 10;
-        this.player.health = 100;
-        
-        console.log("プレイヤー位置:", this.player.x, this.player.y);
+        try {
+            // 使用するプレイヤー画像名を決定
+            const playerTexture = this.textures.exists('player') ? 'player' : 'player_fallback';
+            
+            // プレイヤースプライト
+            this.player = this.physics.add.sprite(100, 100, playerTexture);
+            
+            if (!this.player) {
+                throw new Error("プレイヤーの作成に失敗しました");
+            }
+            
+            this.player.setCollideWorldBounds(true);
+            this.player.setScale(1);
+            
+            // 衝突判定
+            if (this.groundLayer) {
+                this.physics.add.collider(this.player, this.groundLayer);
+            }
+            
+            // プレイヤー情報
+            this.player.depth = 10;
+            this.player.health = 100;
+            
+            console.log(`プレイヤー位置: (${this.player.x}, ${this.player.y})`);
+            console.log("プレイヤー作成完了");
+            
+        } catch (error) {
+            console.error("プレイヤー作成エラー:", error);
+            this.showMessage("プレイヤー作成エラー", 3000);
+            
+            // エラー時に代替プレイヤーを作成
+            this.player = this.add.circle(100, 100, 16, 0x0000FF);
+            this.physics.add.existing(this.player);
+            this.player.body.setCollideWorldBounds(true);
+        }
     }
 
     createCamera() {
-        // カメラ追従
-        this.cameras.main.startFollow(this.player);
-        this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
-        this.cameras.main.setZoom(2);
-        this.cameras.main.setBackgroundColor('#87CEEB');
+        console.log("カメラ設定開始");
         
-        console.log("カメラ設定完了");
+        try {
+            // カメラ追従
+            this.cameras.main.startFollow(this.player);
+            
+            // カメラ境界設定
+            if (this.map && this.map.widthInPixels) {
+                this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+            } else {
+                this.cameras.main.setBounds(0, 0, 800, 600);
+            }
+            
+            this.cameras.main.setZoom(2);
+            this.cameras.main.setBackgroundColor('#87CEEB');
+            
+            console.log("カメラ設定完了");
+            
+        } catch (error) {
+            console.error("カメラ設定エラー:", error);
+        }
     }
 
     createObjects() {
-        console.log("オブジェクト配置");
+        console.log("オブジェクト配置開始");
         
-        // 基地
-        this.base = this.physics.add.staticSprite(300, 200, 'base');
-        this.physics.add.collider(this.player, this.base);
-        
-        // 廃墟
-        this.ruin = this.physics.add.staticSprite(500, 300, 'ruin');
-        this.physics.add.collider(this.player, this.ruin);
-        
-        // 壁グループ
-        this.walls = this.physics.add.group();
-        
-        // 弾丸グループ
-        this.bullets = this.physics.add.group({
-            maxSize: 20,
-            runChildUpdate: true
-        });
-        
-        // アイテムグループ
-        this.items = this.physics.add.group();
+        try {
+            // 基地（あれば）
+            if (this.textures.exists('base')) {
+                this.base = this.physics.add.staticSprite(300, 200, 'base');
+                this.physics.add.collider(this.player, this.base);
+            } else {
+                // 代替基地
+                this.base = this.add.rectangle(300, 200, 64, 64, 0x8B4513);
+                this.physics.add.existing(this.base, true);
+                this.physics.add.collider(this.player, this.base);
+            }
+            
+            // 廃墟（あれば）
+            if (this.textures.exists('ruin')) {
+                this.ruin = this.physics.add.staticSprite(500, 300, 'ruin');
+                this.physics.add.collider(this.player, this.ruin);
+            } else {
+                // 代替廃墟
+                this.ruin = this.add.rectangle(500, 300, 96, 64, 0x696969);
+                this.physics.add.existing(this.ruin, true);
+                this.physics.add.collider(this.player, this.ruin);
+            }
+            
+            // 壁グループ
+            this.walls = this.physics.add.group();
+            
+            // 弾丸グループ
+            this.bullets = this.physics.add.group({
+                maxSize: 20,
+                runChildUpdate: true
+            });
+            
+            // アイテムグループ
+            this.items = this.physics.add.group();
+            
+            console.log("オブジェクト配置完了");
+            
+        } catch (error) {
+            console.error("オブジェクト配置エラー:", error);
+        }
     }
 
     createUI() {
-        console.log("UI作成");
+        console.log("UI作成開始");
         
-        // HUD背景
-        this.hudBg = this.add.rectangle(10, 10, 250, 180, 0x000000, 0.7)
-            .setOrigin(0, 0)
-            .setScrollFactor(0)
-            .setDepth(100);
-        
-        // HP表示
-        this.hpText = this.add.text(20, 20, 'HP: 100/100', {
-            font: '16px Arial',
-            fill: '#ff5555'
-        }).setScrollFactor(0).setDepth(101);
-        
-        // 飢餓度表示
-        this.hungerText = this.add.text(20, 50, '飢餓度: 80%', {
-            font: '16px Arial',
-            fill: '#ffaa00'
-        }).setScrollFactor(0).setDepth(101);
-        
-        // 選択スロット表示
-        this.slotText = this.add.text(20, 80, '選択スロット: 1', {
-            font: '16px Arial',
-            fill: '#55ff55'
-        }).setScrollFactor(0).setDepth(101);
-        
-        // インベントリ表示
-        this.createInventoryDisplay();
-        
-        // 操作説明
-        this.controlsText = this.add.text(20, 160, '移動: WASD | 採集: E | 設置: R | 射撃: クリック', {
-            font: '12px Arial',
-            fill: '#cccccc'
-        }).setScrollFactor(0).setDepth(101);
-        
-        // デバッグ情報
-        this.debugText = this.add.text(10, this.cameras.main.height - 30, '', {
-            font: '12px Arial',
-            fill: '#00ff00',
-            backgroundColor: '#000000'
-        }).setScrollFactor(0).setDepth(101);
+        try {
+            // HUD背景
+            this.hudBg = this.add.rectangle(10, 10, 250, 180, 0x000000, 0.7)
+                .setOrigin(0, 0)
+                .setScrollFactor(0)
+                .setDepth(100);
+            
+            // HP表示
+            this.hpText = this.add.text(20, 20, 'HP: 100/100', {
+                font: '16px Arial',
+                fill: '#ff5555'
+            }).setScrollFactor(0).setDepth(101);
+            
+            // 飢餓度表示
+            this.hungerText = this.add.text(20, 50, '飢餓度: 80%', {
+                font: '16px Arial',
+                fill: '#ffaa00'
+            }).setScrollFactor(0).setDepth(101);
+            
+            // 選択スロット表示
+            this.slotText = this.add.text(20, 80, '選択スロット: 1', {
+                font: '16px Arial',
+                fill: '#55ff55'
+            }).setScrollFactor(0).setDepth(101);
+            
+            // インベントリ表示
+            this.createInventoryDisplay();
+            
+            // 操作説明
+            this.controlsText = this.add.text(20, 160, '移動: WASD | 採集: E | 設置: R | 射撃: クリック', {
+                font: '12px Arial',
+                fill: '#cccccc'
+            }).setScrollFactor(0).setDepth(101);
+            
+            // デバッグ情報
+            this.debugText = this.add.text(10, this.cameras.main.height - 30, '', {
+                font: '12px Arial',
+                fill: '#00ff00',
+                backgroundColor: '#000000'
+            }).setScrollFactor(0).setDepth(101);
+            
+            console.log("UI作成完了");
+            
+        } catch (error) {
+            console.error("UI作成エラー:", error);
+        }
     }
 
     createInventoryDisplay() {
+        console.log("インベントリ表示作成");
+        
         this.inventorySlots = [];
         const startX = 20;
         const startY = 100;
@@ -365,53 +550,57 @@ createFallbackGraphics() {
     }
 
     createInput() {
-        console.log("入力設定");
+        console.log("入力設定開始");
         
-        // キーボード入力
-        this.keys = this.input.keyboard.addKeys({
-            up: 'W',
-            down: 'S',
-            left: 'A',
-            right: 'D',
-            action: 'E',
-            place: 'R',
-            pickup: 'F'
-        });
-        
-        // 数字キーでスロット選択
-        for (let i = 0; i < 9; i++) {
-            this.input.keyboard.on(`keydown-${i + 1}`, () => {
-                this.selectInventorySlot(i);
+        try {
+            // キーボード入力
+            this.keys = this.input.keyboard.addKeys({
+                up: 'W',
+                down: 'S',
+                left: 'A',
+                right: 'D',
+                action: 'E',
+                place: 'R',
+                pickup: 'F'
             });
-        }
-        
-        // マウスクリックで射撃
-        this.input.on('pointerdown', (pointer) => {
-            if (pointer.leftButtonDown()) {
-                this.shootBullet(pointer);
+            
+            // 数字キーでスロット選択
+            for (let i = 0; i < 9; i++) {
+                this.input.keyboard.on(`keydown-${i + 1}`, () => {
+                    this.selectInventorySlot(i);
+                });
             }
-        });
-        
-        // Eキーで採集
-        this.input.keyboard.on('keydown-E', () => {
-            this.harvest();
-        });
-        
-        // Rキーで設置
-        this.input.keyboard.on('keydown-R', () => {
-            this.place();
-        });
-        
-        console.log("入力設定完了");
+            
+            // マウスクリックで射撃
+            this.input.on('pointerdown', (pointer) => {
+                if (pointer.leftButtonDown()) {
+                    this.shootBullet(pointer);
+                }
+            });
+            
+            // Eキーで採集
+            this.input.keyboard.on('keydown-E', () => {
+                this.harvest();
+            });
+            
+            // Rキーで設置
+            this.input.keyboard.on('keydown-R', () => {
+                this.place();
+            });
+            
+            console.log("入力設定完了");
+            
+        } catch (error) {
+            console.error("入力設定エラー:", error);
+        }
     }
 
     startGameLoop() {
+        console.log("ゲームループ開始");
+        
         // 時間計測用
         this.lastUpdate = this.time.now;
         this.lastHungerUpdate = this.time.now;
-        
-        // ゲームループ開始
-        console.log("ゲームループ開始");
     }
 
     update(time, delta) {
@@ -438,23 +627,27 @@ createFallbackGraphics() {
         let velocityX = 0;
         let velocityY = 0;
         
-        if (this.keys.left.isDown) velocityX = -speed;
-        if (this.keys.right.isDown) velocityX = speed;
-        if (this.keys.up.isDown) velocityY = -speed;
-        if (this.keys.down.isDown) velocityY = speed;
+        if (this.keys && this.keys.left.isDown) velocityX = -speed;
+        if (this.keys && this.keys.right.isDown) velocityX = speed;
+        if (this.keys && this.keys.up.isDown) velocityY = -speed;
+        if (this.keys && this.keys.down.isDown) velocityY = speed;
         
-        this.player.setVelocity(velocityX, velocityY);
+        if (this.player && this.player.body) {
+            this.player.setVelocity(velocityX, velocityY);
+        }
         
-        // アニメーション（将来的に）
-        if (velocityX !== 0 || velocityY !== 0) {
-            this.player.anims.play('walk', true);
-        } else {
-            this.player.anims.play('idle', true);
+        // アニメーション
+        if (this.player && this.player.anims) {
+            if (velocityX !== 0 || velocityY !== 0) {
+                this.player.anims.play('walk', true);
+            } else {
+                this.player.anims.play('idle', true);
+            }
         }
     }
 
     harvest() {
-        if (this.gameState.isPaused) return;
+        if (this.gameState.isPaused || !this.groundLayer) return;
         
         const playerTileX = Math.floor(this.player.x / 32);
         const playerTileY = Math.floor(this.player.y / 32);
@@ -481,7 +674,21 @@ createFallbackGraphics() {
 
     harvestTile(tile, x, y) {
         const tileIndex = tile.index;
-        const drop = window.TILE_DROPS[tileIndex];
+        let drop = null;
+        
+        // TILE_DROPS が定義されていれば使用
+        if (window.TILE_DROPS && window.TILE_DROPS[tileIndex]) {
+            drop = window.TILE_DROPS[tileIndex];
+        } else {
+            // デフォルトのドロップ
+            const defaultDrops = {
+                1: { type: "dirt", name: "土", icon: "food_icon" },
+                2: { type: "grass", name: "草", icon: "food_icon" },
+                3: { type: "wood", name: "木材", icon: "food_icon", count: 2 },
+                4: { type: "stone", name: "石材", icon: "food_icon" }
+            };
+            drop = defaultDrops[tileIndex];
+        }
         
         if (drop) {
             // アイテム追加
@@ -501,7 +708,7 @@ createFallbackGraphics() {
     }
 
     place() {
-        if (this.gameState.isPaused) return;
+        if (this.gameState.isPaused || !this.groundLayer) return;
         
         const selectedItem = this.gameState.inventory[this.gameState.selectedSlot];
         if (!selectedItem) {
@@ -548,6 +755,14 @@ createFallbackGraphics() {
     }
 
     getItemTileId(itemType) {
+        if (!window.TILE) {
+            // デフォルトのTILE定義
+            window.TILE = {
+                AIR: 0, DIRT: 1, GRASS: 2, TREE: 3, STONE: 4,
+                BRICK: 5, IRON: 6, ROAD: 7, FARM: 8, FIRE: 9
+            };
+        }
+        
         switch(itemType) {
             case 'dirt': return window.TILE.DIRT;
             case 'wood': return window.TILE.TREE;
@@ -560,7 +775,18 @@ createFallbackGraphics() {
     shootBullet(pointer) {
         if (this.gameState.isPaused) return;
         
-        const bullet = this.bullets.get(this.player.x, this.player.y, 'bullet');
+        let bullet;
+        
+        // 弾丸画像があれば使用
+        if (this.textures.exists('bullet')) {
+            bullet = this.bullets.get(this.player.x, this.player.y, 'bullet');
+        } else {
+            // 代替弾丸（黄色い円）
+            bullet = this.add.circle(this.player.x, this.player.y, 4, 0xFFFF00);
+            this.physics.add.existing(bullet);
+            this.bullets.add(bullet);
+        }
+        
         if (!bullet) return;
         
         bullet.setActive(true);
@@ -578,13 +804,17 @@ createFallbackGraphics() {
             Math.cos(angle) * speed,
             Math.sin(angle) * speed
         );
-        bullet.setRotation(angle);
+        
+        if (bullet.setRotation) {
+            bullet.setRotation(angle);
+        }
         
         // 自動削除
         this.time.delayedCall(2000, () => {
-            if (bullet.active) {
+            if (bullet && bullet.active) {
                 bullet.setActive(false);
                 bullet.setVisible(false);
+                if (bullet.destroy) bullet.destroy();
             }
         });
         
@@ -659,10 +889,12 @@ createFallbackGraphics() {
     }
 
     updateInventoryDisplay() {
+        if (!this.inventorySlots) return;
+        
         // スロット表示更新
         for (let i = 0; i < 9; i++) {
-            const slot = this.gameState.inventory[i];
             const slotUI = this.inventorySlots[i];
+            if (!slotUI) continue;
             
             // 選択状態
             if (i === this.gameState.selectedSlot) {
@@ -671,8 +903,10 @@ createFallbackGraphics() {
                 slotUI.bg.setStrokeStyle(2, 0x666666);
             }
             
+            const slot = this.gameState.inventory[i];
+            
             // アイテム表示
-            if (slot && slot.icon) {
+            if (slot && slot.icon && this.textures.exists(slot.icon)) {
                 // アイコン画像
                 if (!slotUI.icon) {
                     slotUI.icon = this.add.image(
@@ -686,19 +920,25 @@ createFallbackGraphics() {
                 }
                 
                 // カウント表示
-                slotUI.count.setText(slot.count > 1 ? slot.count.toString() : '');
-                slotUI.count.setVisible(true);
+                if (slotUI.count) {
+                    slotUI.count.setText(slot.count > 1 ? slot.count.toString() : '');
+                    slotUI.count.setVisible(true);
+                }
             } else {
                 // 空きスロット
                 if (slotUI.icon) {
                     slotUI.icon.setVisible(false);
                 }
-                slotUI.count.setVisible(false);
+                if (slotUI.count) {
+                    slotUI.count.setVisible(false);
+                }
             }
         }
     }
 
     updateUI() {
+        if (!this.hpText || !this.hungerText || !this.slotText) return;
+        
         // HP表示
         this.hpText.setText(`HP: ${this.gameState.hp}/${this.gameState.maxHp}`);
         
@@ -719,27 +959,31 @@ createFallbackGraphics() {
     }
 
     updateDebugInfo() {
-        const playerTileX = Math.floor(this.player.x / 32);
-        const playerTileY = Math.floor(this.player.y / 32);
+        if (!this.debugText || !this.player) return;
+        
+        const playerTileX = this.groundLayer ? Math.floor(this.player.x / 32) : 0;
+        const playerTileY = this.groundLayer ? Math.floor(this.player.y / 32) : 0;
         
         this.debugText.setText([
             `位置: ${Math.floor(this.player.x)}, ${Math.floor(this.player.y)}`,
             `タイル: ${playerTileX}, ${playerTileY}`,
             `ゲーム時間: ${Math.floor(this.gameState.gameTime)}秒`,
-            `FPS: ${Math.floor(this.game.loop.actualFps)}`
+            `FPS: ${this.game.loop ? Math.floor(this.game.loop.actualFps) : 0}`
         ]);
     }
 
     // === ユーティリティ関数 ===
     isValidTilePosition(x, y) {
-        return x >= 0 && x < this.map.width && y >= 0 && y < this.map.height;
+        return this.map && x >= 0 && x < this.map.width && y >= 0 && y < this.map.height;
     }
 
     showMessage(text, duration = 2000) {
+        // 既存のメッセージを削除
         if (this.messageText) {
             this.messageText.destroy();
         }
         
+        // 新しいメッセージを作成
         this.messageText = this.add.text(
             this.cameras.main.width / 2,
             this.cameras.main.height - 50,
@@ -763,36 +1007,48 @@ createFallbackGraphics() {
     }
 
     createHarvestEffect(x, y) {
-        const particles = this.add.particles('bullet');
-        const emitter = particles.createEmitter({
-            x: x,
-            y: y,
-            speed: { min: -50, max: 50 },
-            angle: { min: 0, max: 360 },
-            scale: { start: 0.5, end: 0 },
-            lifespan: 500,
-            quantity: 5,
-            blendMode: 'ADD'
-        });
-        
-        this.time.delayedCall(500, () => {
-            particles.destroy();
-        });
+        try {
+            let particles;
+            
+            if (this.textures.exists('bullet')) {
+                particles = this.add.particles('bullet');
+            } else {
+                // 代替パーティクル（黄色い円）
+                particles = this.add.particles(x, y, 'bullet', {
+                    frame: 0,
+                    quantity: 5,
+                    lifespan: 500,
+                    speed: { min: 50, max: 150 },
+                    scale: { start: 0.5, end: 0 },
+                    alpha: { start: 1, end: 0 }
+                });
+            }
+            
+            this.time.delayedCall(500, () => {
+                if (particles) particles.destroy();
+            });
+        } catch (error) {
+            console.log("エフェクト作成エラー:", error);
+        }
     }
 
     createShootEffect() {
-        // 発射エフェクト
-        const flash = this.add.circle(this.player.x, this.player.y, 10, 0xffff00, 0.8);
-        flash.setDepth(9);
-        
-        this.tweens.add({
-            targets: flash,
-            scale: 0,
-            alpha: 0,
-            duration: 100,
-            onComplete: () => {
-                flash.destroy();
-            }
-        });
+        try {
+            // 発射エフェクト
+            const flash = this.add.circle(this.player.x, this.player.y, 10, 0xffff00, 0.8);
+            flash.setDepth(9);
+            
+            this.tweens.add({
+                targets: flash,
+                scale: 0,
+                alpha: 0,
+                duration: 100,
+                onComplete: () => {
+                    if (flash) flash.destroy();
+                }
+            });
+        } catch (error) {
+            console.log("発射エフェクトエラー:", error);
+        }
     }
 };

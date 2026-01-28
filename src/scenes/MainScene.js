@@ -348,45 +348,86 @@ window.MainScene = class MainScene extends Phaser.Scene {
     }
 
     createPlayer() {
-        console.log("プレイヤー作成開始");
+    console.log("プレイヤー作成開始");
+    
+    try {
+        // 使用するプレイヤー画像名を決定
+        const playerTexture = this.textures.exists('player') ? 'player' : 'player_fallback';
         
-        try {
-            // 使用するプレイヤー画像名を決定
-            const playerTexture = this.textures.exists('player') ? 'player' : 'player_fallback';
-            
-            // プレイヤースプライト
-            this.player = this.physics.add.sprite(100, 100, playerTexture);
-            
-            if (!this.player) {
-                throw new Error("プレイヤーの作成に失敗しました");
-            }
-            
-            this.player.setCollideWorldBounds(true);
-            this.player.setScale(1);
-            
-            // 衝突判定
-            if (this.groundLayer) {
-                this.physics.add.collider(this.player, this.groundLayer);
-            }
-            
-            // プレイヤー情報
-            this.player.depth = 10;
-            this.player.health = 100;
-            
-            console.log(`プレイヤー位置: (${this.player.x}, ${this.player.y})`);
-            console.log("プレイヤー作成完了");
-            
-        } catch (error) {
-            console.error("プレイヤー作成エラー:", error);
-            this.showMessage("プレイヤー作成エラー", 3000);
-            
-            // エラー時に代替プレイヤーを作成
-            this.player = this.add.circle(100, 100, 16, 0x0000FF);
-            this.physics.add.existing(this.player);
-            this.player.body.setCollideWorldBounds(true);
+        // プレイヤースプライト
+        this.player = this.physics.add.sprite(100, 100, playerTexture);
+        
+        if (!this.player) {
+            throw new Error("プレイヤーの作成に失敗しました");
         }
+        
+        this.player.setCollideWorldBounds(true);
+        
+        // ★ サイズ調整（重要！）
+        // プレイヤーを小さく調整（画像サイズに関わらず）
+        const targetDisplaySize = 24; // 表示したいサイズ（ピクセル）
+        
+        // 現在の画像サイズを取得
+        const imageWidth = this.player.width;
+        const imageHeight = this.player.height;
+        console.log(`プレイヤー画像元サイズ: ${imageWidth}x${imageHeight}px`);
+        
+        // スケール計算（表示サイズに合わせる）
+        const scaleX = targetDisplaySize / imageWidth;
+        const scaleY = targetDisplaySize / imageHeight;
+        
+        // スケール適用（アスペクト比を維持）
+        const uniformScale = Math.min(scaleX, scaleY);
+        this.player.setScale(uniformScale);
+        
+        // 実際の表示サイズを計算
+        const displayWidth = Math.round(imageWidth * uniformScale);
+        const displayHeight = Math.round(imageHeight * uniformScale);
+        
+        // ★ 衝突ボックスを適切なサイズに設定
+        // 表示サイズより少し小さく（80%）して、画像の余白を考慮
+        const collisionWidth = displayWidth * 0.8;
+        const collisionHeight = displayHeight * 0.8;
+        const offsetX = (displayWidth - collisionWidth) / 2;
+        const offsetY = (displayHeight - collisionHeight) / 2;
+        
+        this.player.body.setSize(collisionWidth, collisionHeight);
+        this.player.body.setOffset(offsetX, offsetY);
+        
+        // ★ 物理パラメータ調整（ブルブル防止）
+        this.player.body.setBounce(0);          // 反発を無効化
+        this.player.body.setDrag(800);          // 滑りを減らす
+        this.player.body.setFriction(1);        // 摩擦を最大に
+        this.player.body.setMaxVelocity(200);   // 最高速度制限
+        
+        // 衝突判定
+        if (this.groundLayer) {
+            this.physics.add.collider(this.player, this.groundLayer);
+        }
+        
+        // プレイヤー情報
+        this.player.depth = 10;
+        this.player.health = 100;
+        
+        console.log(`プレイヤー表示サイズ: ${displayWidth}x${displayHeight}px`);
+        console.log(`プレイヤースケール: ${uniformScale.toFixed(2)}倍`);
+        console.log(`衝突ボックス: ${collisionWidth.toFixed(0)}x${collisionHeight.toFixed(0)}px`);
+        console.log(`プレイヤー位置: (${this.player.x.toFixed(0)}, ${this.player.y.toFixed(0)})`);
+        console.log("プレイヤー作成完了");
+        
+    } catch (error) {
+        console.error("プレイヤー作成エラー:", error);
+        this.showMessage("プレイヤー作成エラー", 3000);
+        
+        // エラー時に代替プレイヤーを作成（青い円、小さく）
+        this.player = this.add.circle(100, 100, 12, 0x0000FF); // 半径12pxに変更
+        this.physics.add.existing(this.player);
+        this.player.body.setCollideWorldBounds(true);
+        this.player.body.setBounce(0);
+        this.player.body.setCircle(12); // 円形の衝突ボックス
+        console.log("代替プレイヤー（円）を作成: 半径12px");
     }
-
+}
     createCamera() {
         console.log("カメラ設定開始");
         
@@ -1052,3 +1093,6 @@ window.MainScene = class MainScene extends Phaser.Scene {
         }
     }
 };
+
+
+                                          //オブジェクトはまだでかい　プレイやー修正1/28

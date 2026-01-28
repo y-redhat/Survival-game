@@ -1,4 +1,4 @@
-// タイル定数定義
+// タイル定義
 window.TILE = {
     AIR: 0,
     DIRT: 1,
@@ -12,16 +12,27 @@ window.TILE = {
     FIRE: 9
 };
 
-// タイルのプロパティ（採集可能か、何がドロップするかなど）
-window.TILE_PROPERTIES = {
-    0: { name: "空気", harvestable: false, drops: null },
-    1: { name: "土", harvestable: true, drops: { type: "dirt", icon: "tiles" } },
-    2: { name: "草", harvestable: true, drops: { type: "grass", icon: "tiles" } },
-    3: { name: "木", harvestable: true, drops: { type: "wood", icon: "wood_icon", count: 2 } },
-    4: { name: "石", harvestable: true, drops: { type: "stone", icon: "stone_icon" } },
-    5: { name: "レンガ", harvestable: true, drops: { type: "brick", icon: "tiles" } },
-    6: { name: "鉄", harvestable: true, drops: { type: "iron", icon: "tiles" } },
-    7: { name: "道", harvestable: false, drops: null },
-    8: { name: "畑", harvestable: true, drops: { type: "farm", icon: "tiles" } },
-    9: { name: "炎", harvestable: false, drops: null, damage: 10 }
+// タイル名
+window.TILE_NAMES = {
+    0: "空気",
+    1: "土",
+    2: "草",
+    3: "木",
+    4: "石",
+    5: "レンガ",
+    6: "鉄",
+    7: "道",
+    8: "畑",
+    9: "炎"
+};
+
+// 採集ドロップ
+window.TILE_DROPS = {
+    1: { type: "dirt", name: "土", icon: "dirt_icon" },
+    2: { type: "grass", name: "草", icon: "dirt_icon" },
+    3: { type: "wood", name: "木材", icon: "wood_icon", count: 2 },
+    4: { type: "stone", name: "石材", icon: "stone_icon" },
+    5: { type: "brick", name: "レンガ", icon: "stone_icon" },
+    6: { type: "iron", name: "鉄", icon: "stone_icon" },
+    8: { type: "farm", name: "畑", icon: "dirt_icon" }
 };

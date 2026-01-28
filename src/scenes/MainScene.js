@@ -76,35 +76,80 @@ window.MainScene = class MainScene extends Phaser.Scene {
 
     create() {
         console.log("ゲーム作成開始");
+
+        const missingTextures = [];
+    const expectedTextures = [
+        'tileset', 'player', 'base', 'ruin', 'bullet',
+        'item_wood', 'item_stone', 'item_dirt', 'item_food'
+        ];
+
+
+
+        expectedTextures.forEach(textureKey => {
+        if (!this.textures.exists(textureKey)) {
+            missingTextures.push(textureKey);
+            console.error(`テクスチャが見つかりません: ${textureKey}`);
+        }
+    });
+
+
+        if (missingTextures.length > 0) {
+        this.showMessage(`画像読み込みエラー: ${missingTextures.join(', ')}`, 5000);
+        // 代替画像で続行
+        this.createFallbackGraphics();
+
+
+
+
+        this.createPlayerAnimations();
+
+
+    this.initGameState();
+    this.createWorld();
+    this.createPlayer();
+    this.createCamera();
+    this.createObjects();
+    this.createUI();
+    this.createInput();
+    this.startGameLoop();
+
+
+
+            
         
-        // ゲーム状態初期化
-        this.initGameState();
-        
-        // ワールド生成
-        this.createWorld();
-        
-        // プレイヤー
-        this.createPlayer();
-        
-        // カメラ設定
-        this.createCamera();
-        
-        // オブジェクト配置
-        this.createObjects();
-        
-        // UI作成
-        this.createUI();
-        
-        // 入力設定
-        this.createInput();
-        
-        // ゲームループ開始
-        this.startGameLoop();
         
         console.log("ゲーム作成完了");
         this.showMessage("生存サバイバルゲーム開始！", 3000);
     }
 
+
+
+createFallbackGraphics() {
+    console.log("代替グラフィックを作成");
+
+    if (!this.textures.exists('tileset')) {
+        const graphics = this.add.graphics();
+
+
+   const tileColors = {
+            0: 0x000000, // 空気
+            1: 0x8B4513, // 土
+            2: 0x90EE90, // 草
+            3: 0x228B22, // 木
+            4: 0x808080, // 石
+            5: 0xB22222, // レンガ
+            6: 0xC0C0C0, // 鉄
+            7: 0x696969, // 道
+            8: 0xDEB887, // 畑
+            9: 0xFF4500  // 炎
+        };
+
+
+
+        
+
+        
+        
     initGameState() {
         this.gameState = {
             // プレイヤーステータス
